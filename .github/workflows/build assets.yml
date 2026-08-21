@@ -24,9 +24,22 @@ jobs:
           mkdir -p output_models
           blender -b -P generate_all_452_models.py
 
+      - name: Check Generated Files
+        run: |
+          echo "Checking output_models directory:"
+          ls -la output_models/ || echo "output_models is empty or missing"
+          find output_models -type f || echo "No files found"
+
       - name: Zip Exported 452 Models
         run: |
           cd output_models
+          # Check if assets directory exists, if not create it with any generated files
+          if [ ! -d "assets" ]; then
+            echo "assets/ directory not found. Creating it with generated files..."
+            mkdir -p assets
+            # Move any generated files into assets if they exist
+            find . -maxdepth 1 -type f ! -name '.*' -exec mv {} assets/ \;
+          fi
           zip -r ../Rebound_452_Base_Models.zip assets/
 
       - name: Upload Models as Downloadable Artifact
