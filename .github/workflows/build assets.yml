@@ -1,49 +1,43 @@
-name: Generate Rebound 452 Base Models
+name: Generate Rebound 2100 Master Base Models
 
 on:
-  workflow_dispatch: # Allows you to click a button to start it!
+  workflow_dispatch: # Allows you to trigger it with one click!
 
 jobs:
-  build-models:
+  build-all-models:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Headless Blender 4.1
+      - name: Install Headless Blender 4.1 & System Libs
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libgl1 libxi6 libxrender1 libxfixes3
+          sudo apt-get install -y libgl1 libxi6 libxrender1 libxfixes3 libxkbcommon0 zip
           wget -q https://download.blender.org/release/Blender4.1/blender-4.1.1-linux-x64.tar.xz
           tar -xf blender-4.1.1-linux-x64.tar.xz
           echo "$GITHUB_WORKSPACE/blender-4.1.1-linux-x64" >> $GITHUB_PATH
 
-      - name: Run Blender Headless Batch Generator
+      - name: Run Blender Headless Master Batch Generator
         run: |
           mkdir -p output_models
-          blender -b -P generate_all_452_models.py
+          $GITHUB_WORKSPACE/blender-4.1.1-linux-x64/blender -b -P generate_all_2100_models.py
 
-      - name: Check Generated Files
+      - name: Verify & Zip Generated 2100 Models
         run: |
-          echo "Checking output_models directory:"
-          ls -la output_models/ || echo "output_models is empty or missing"
-          find output_models -type f || echo "No files found"
-
-      - name: Zip Exported 452 Models
-        run: |
-          cd output_models
-          # Check if assets directory exists, if not create it with any generated files
-          if [ ! -d "assets" ]; then
-            echo "assets/ directory not found. Creating it with generated files..."
-            mkdir -p assets
-            # Move any generated files into assets if they exist
-            find . -maxdepth 1 -type f ! -name '.*' -exec mv {} assets/ \;
+          echo "🔍 Auditing generated model count:"
+          file_count=$(find output_models -type f -name "*.glb" | wc -l)
+          echo "Total .glb models generated: $file_count"
+          if [ "$file_count" -ne 2100 ]; then
+            echo "❌ ERROR: Model count mismatch! Expected 2100, got $file_count"
+            exit 1
           fi
-          zip -r ../Rebound_452_Base_Models.zip assets/
+          cd output_models
+          zip -r ../Rebound_2100_Base_Models.zip .
 
       - name: Upload Models as Downloadable Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Rebound_452_Base_Models
-          path: Rebound_452_Base_Models.zip
+          name: Rebound_2100_Base_Models
+          path: Rebound_2100_Base_Models.zip
